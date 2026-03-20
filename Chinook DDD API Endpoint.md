@@ -27,9 +27,21 @@ The API is grouped by bounded contexts so each business capability can evolve wi
 
 ### Platform
 
-- Runtime: .NET 8 (ASP.NET Core)
+- Runtime: .NET 10 (ASP.NET Core)
 - Language: C#
 - API Style: RESTful Web API
+
+### API Documentation And Testing
+
+- OpenAPI document is mapped in development.
+- Scalar UI is enabled in development via `MapScalarApiReference()`.
+- Launch profile opens Scalar at `http://localhost:5185/scalar/v1`.
+
+### Logging Configuration (Serilog)
+
+- Console and rolling file logging are enabled.
+- File logs are written to `Logs/log-.txt` (daily rolling, size limit, retention).
+- Startup logs include quick access URL for Scalar.
 
 ### Architecture Style
 
@@ -99,6 +111,82 @@ The API is grouped by bounded contexts so each business capability can evolve wi
 
 ---
 
+## Chinook.API Folder Design And Usage
+
+### Target Project Structure (Vertical Slice)
+
+- `src/Chinook.API/Program.cs`
+- `src/Chinook.API/appsettings.json`
+- `src/Chinook.API/Data/`
+- `src/Chinook.API/Common/`
+- `src/Chinook.API/Infrastructure/`
+- `src/Chinook.API/Features/`
+
+### Folder Responsibilities
+
+#### Program.cs
+
+- Composition root for the API.
+- Register MediatR, FluentValidation, Serilog, caching, and infrastructure services.
+- Map feature endpoints and middleware pipeline.
+
+#### Data/
+
+- Hosts runtime data files used by the API.
+- Store the SQLite file as `Data/Chinook.db`.
+- Keep this folder for local/dev data artifacts, not domain code.
+
+#### Common/
+
+- Cross-cutting building blocks reused by all slices.
+- `Common/Behaviors`: MediatR pipeline behaviors (validation, logging, performance).
+- `Common/Results`: Result pattern primitives and error models.
+- `Common/Validation`: shared validation helpers.
+- `Common/Caching`: cache key and cache policy abstractions.
+- `Common/Contracts`: shared request/response contracts only when truly common.
+- `Common/Errors`: shared application/domain error definitions.
+- `Common/Logging`: logging helpers/enrichers.
+
+#### Infrastructure/
+
+- External integration implementations.
+- `Infrastructure/Persistence`: DbContext, repository/query implementations, DB access.
+- `Infrastructure/Caching`: memory/redis cache provider implementations.
+- `Infrastructure/Logging`: Serilog sink/enricher wiring.
+- `Infrastructure/DependencyInjection`: service registration extensions.
+
+#### Features/
+
+- Main Vertical Slice area, organized by business capability.
+- Each feature owns commands, queries, handlers, validators, endpoint maps, and DTOs.
+- Example slices:
+	- `Features/Catalog/...`
+	- `Features/Playlists/...`
+	- `Features/Customers/...`
+	- `Features/Billing/Invoices/...`
+	- `Features/Employees/...`
+	- `Features/Analytics/...`
+
+### How To Add A New Feature Slice
+
+1. Create a feature folder under `Features/<Domain>/<UseCase>`.
+2. Add `Command` or `Query` model.
+3. Add `Handler` implementing MediatR request handling.
+4. Add `Validator` using FluentValidation.
+5. Add endpoint mapping for the slice.
+6. Return standardized Result objects.
+7. Add tests for validator + handler + endpoint behavior.
+
+### Folder Design Rules
+
+- Keep business logic in feature handlers/domain services, not in Program.cs.
+- Prefer duplication between slices over premature shared abstractions.
+- Move code to `Common` only after a clear reuse pattern appears.
+- Keep `Infrastructure` replaceable; depend on interfaces in feature code.
+- Keep analytics slices read-only by default.
+
+---
+
 ## API Conventions
 
 - Base path: `/api`
@@ -116,17 +204,37 @@ The API is grouped by bounded contexts so each business capability can evolve wi
 
 ### Core Tables
 
-- `Artist`
-- `Album`
-- `Track`
-- `Genre`
-- `MediaType`
-- `Playlist`
-- `PlaylistTrack`
-- `Customer`
-- `Employee`
-- `Invoice`
-- `InvoiceLine`
+- `artists`
+- `albums`
+- `tracks`
+- `genres`
+- `media_types`
+- `playlists`
+- `playlist_track`
+- `customers`
+- `employees`
+- `invoices`
+- `invoice_items`
+
+### Entity Classes (Short Summary)
+
+- `Infrastructure/Persistence/Entities/Catalog/Artist.cs`: Artist master record and album ownership.
+- `Infrastructure/Persistence/Entities/Catalog/Album.cs`: Album metadata linked to one artist and many tracks.
+- `Infrastructure/Persistence/Entities/Catalog/Track.cs`: Track metadata with album, genre, and media type references.
+- `Infrastructure/Persistence/Entities/Catalog/Genre.cs`: Genre lookup for track classification.
+- `Infrastructure/Persistence/Entities/Catalog/MediaType.cs`: Media format lookup for tracks.
+
+- `Infrastructure/Persistence/Entities/Playlists/Playlist.cs`: Playlist aggregate root containing playlist-track links.
+- `Infrastructure/Persistence/Entities/Playlists/PlaylistTrack.cs`: Join entity for many-to-many Playlist and Track mapping.
+
+- `Infrastructure/Persistence/Entities/Customers/Customer.cs`: Customer profile and support rep relationship.
+
+- `Infrastructure/Persistence/Entities/Billing/Invoice.cs`: Invoice header with billing details and total amount.
+- `Infrastructure/Persistence/Entities/Billing/InvoiceLine.cs`: Invoice line item linking invoice to purchased track.
+
+- `Infrastructure/Persistence/Entities/Employees/Employee.cs`: Employee profile with manager hierarchy and supported customers.
+
+- `Infrastructure/Persistence/Entities/Analytics/`: Reserved for read-model entities/projections used by analytics endpoints.
 
 ---
 
@@ -311,3 +419,9 @@ This combined endpoint catalog applies DDD principles for Chinook while excludin
 - Cross-domain relationships are clear and can be implemented via events or application services.
 
 This catalog is ready to be transformed into an OpenAPI contract and implemented through layered architecture (Domain, Application, Infrastructure, API).
+
+fluent validation, fluent result pattern, endpoint result header, 
+
+implement GET /api/catalog/artists/{artistId} 
+with same verticle-slice pattern as 
+(Query + Handler + automapper projection + fluent validation)
