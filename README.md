@@ -8,6 +8,7 @@ A RESTful Web API built on the [Chinook](https://github.com/lerocha/chinook-data
 
 The Chinook API models a digital music store, organizing business capabilities into clearly bounded domains. Each domain slice owns its own request models, handlers, validation, mapping, and endpoint wiring — keeping concerns isolated and dependencies explicit.
 
+
 ### Bounded Contexts
 
 | Domain | Scope |
@@ -134,17 +135,45 @@ src/
     ├── Data/                   # Database seed data / scripts
     ├── Features/
     │   ├── Analytics/          # Read-only projections and reporting
-    │   ├── Billing/            # Invoices, invoice lines
-    │   │   └── Invoices/
-    │   │       ├── Commands/
-    │   │       └── Queries/
+    │   │   ├── GetById/
+    │   │   ├── List/
+    │   │   ├── Shared/
+    │   │   └── AnalyticsEndpointExtensions.cs
+    │   ├── Billing/            # Invoices and checkout flows
+    │   │   ├── Create/
+    │   │   ├── Delete/
+    │   │   ├── GetById/
+    │   │   ├── List/
+    │   │   ├── Update/
+    │   │   ├── Shared/
+    │   │   └── BillingEndpointExtensions.cs
     │   ├── Catalog/            # Artists, Albums, Tracks, Genres, Media Types
     │   │   ├── GetById/        # GetArtistByIdQuery + Validator
     │   │   ├── List/           # ListArtistsQuery
     │   │   └── Shared/         # ArtistDto, CatalogMappingProfile
-    │   ├── Customers/          # Customer profiles
-    │   ├── Employees/          # Employee records
+    │   ├── Customers/          # Customer profiles and support rep operations
+    │   │   ├── Create/
+    │   │   ├── Delete/
+    │   │   ├── GetById/
+    │   │   ├── List/
+    │   │   ├── Update/
+    │   │   ├── Shared/
+    │   │   └── CustomerEndpointExtensions.cs
+    │   ├── Employees/          # Employee profiles, reports, manager hierarchy
+    │   │   ├── Create/
+    │   │   ├── GetById/
+    │   │   ├── List/
+    │   │   ├── Update/
+    │   │   ├── Shared/
+    │   │   └── EmployeeEndpointExtensions.cs
     │   └── Playlists/          # Playlists and track associations
+    │       ├── Create/
+    │       ├── Delete/
+    │       ├── GetById/
+    │       ├── List/
+    │       ├── Update/
+    │       ├── Shared/
+    │       └── PlaylistEndpointExtensions.cs
     ├── Infrastructure/
     │   ├── Caching/            # Redis cache DI registration
     │   ├── Persistence/
@@ -226,9 +255,10 @@ Planned feature slices aligned to the bounded contexts defined in [Chinook DDD A
 
 - [x] Caching (cache-aside for read-heavy catalog endpoints via Redis)
 - [x] Result pattern for standardized operation outcomes (FluentResults)
-- [ ] Full Billing domain (invoice query/command handlers)
-- [ ] Playlists domain endpoints
-- [ ] Customers domain endpoints
-- [ ] Analytics projections
+- [x] Full Billing domain (invoice query/command handlers)
+- [x] Playlists domain endpoints
+- [x] Customers domain endpoints
+- [x] Employees domain endpoints
+- [x] Analytics projections
 - [ ] OpenTelemetry tracing and metrics
 - [ ] API versioning
