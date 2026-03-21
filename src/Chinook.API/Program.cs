@@ -6,7 +6,12 @@ using Chinook.API.Infrastructure.DependencyInjection;
 using Chinook.API.Infrastructure.Caching;
 using Chinook.API.Common.DependencyInjection;
 using Chinook.API.Common.Exceptions;
+using Chinook.API.Features.Analytics;
+using Chinook.API.Features.Billing;
 using Chinook.API.Features.Catalog;
+using Chinook.API.Features.Customers;
+using Chinook.API.Features.Employees;
+using Chinook.API.Features.Playlists;
 
 var logsPath = Path.Combine(Directory.GetCurrentDirectory(), "Logs");
 Directory.CreateDirectory(logsPath);
@@ -69,6 +74,11 @@ try
 
     app.MapControllers();   
     app.MapCatalogEndpoints();
+    app.MapPlaylistEndpoints();
+    app.MapCustomerEndpoints();
+    app.MapBillingEndpoints();
+    app.MapEmployeeEndpoints();
+    app.MapAnalyticsEndpoints();
 
     Log.Information("Scalar UI quick access: http://localhost:5185/scalar/v1");
 

@@ -422,7 +422,15 @@ This catalog is ready to be transformed into an OpenAPI contract and implemented
 
 fluent validation, fluent result pattern, endpoint result header, 
 
-implement POST /api/catalog/artists
+implement 
+- `GET /api/catalog/tracks`
+- `GET /api/catalog/tracks/{trackId}`
+- `POST /api/catalog/tracks`
+- `PATCH /api/catalog/tracks/{trackId}`
+- `DELETE /api/catalog/tracks/{trackId}`
+
+- `GET /api/catalog/genres`
+- `GET /api/catalog/media-types`
 with same verticle-slice pattern as 
-(Query + Handler + automapper projection + fluent validation, Fluent Results )
+(Query + Handler + automapper projection + fluent validation, Fluent Results, cache )
 
