@@ -3,6 +3,7 @@ using Chinook.API.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Chinook.API.Infrastructure.DependencyInjection;
+using Chinook.API.Infrastructure.Caching;
 using Chinook.API.Common.DependencyInjection;
 using Chinook.API.Common.Exceptions;
 using Chinook.API.Features.Catalog;
@@ -46,9 +47,9 @@ try
     builder.Services.AddAutoMapperServices();
     // Register the DbContext with a connection string from configuration
     builder.Services.AddChinookDbContext(builder.Configuration);
-    // builder.Services.AddDbContext<ChinookDbContext>(options =>
-    //     options.UseSqlite(builder.Configuration.GetConnectionString("ChinookDb")));
-
+    // Register Redis IDistributedCache and CachingBehavior pipeline behavior
+    builder.Services.AddCacheServices(builder.Configuration);
+   
     //builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
