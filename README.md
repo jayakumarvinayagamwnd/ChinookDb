@@ -32,6 +32,7 @@ The Chinook API models a digital music store, organizing business capabilities i
 | Database | SQLite |
 | ORM | Entity Framework Core 10 |
 | API Documentation | OpenAPI + Scalar UI |
+| Health Monitoring | ASP.NET Core Health Checks + Custom Dashboard |
 | Logging | Serilog |
 | Caching | Redis via IDistributedCache |
 | Result Handling | FluentResults |
@@ -62,6 +63,7 @@ Features are organized by **domain slice** rather than technical layer. Each sli
 | **Object Mapping** | AutoMapper with `ProjectTo<T>()` for efficient EF Core projections |
 | **Problem Details** | RFC 7807 compliant error responses via `AddProblemDetails()` |
 | **Global Exception Handling** | `ValidationExceptionHandler` maps FluentValidation failures to `400 Bad Request` |
+| **Health Monitoring** | Liveness/readiness endpoints with custom checks for process memory, SQLite file + DbContext connectivity, and Redis round-trip probes |
 | **Structured Logging** | Serilog with enriched context properties, console and rolling-file sinks |
 
 ---
@@ -72,6 +74,7 @@ Features are organized by **domain slice** rather than technical layer. Each sli
 | Package | Version |
 |---|---|
 | `Microsoft.AspNetCore.OpenApi` | 10.0.5 |
+| `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` | 10.0.5 |
 | `Microsoft.EntityFrameworkCore` | 10.0.5 |
 | `Microsoft.EntityFrameworkCore.Design` | 10.0.5 |
 | `Microsoft.EntityFrameworkCore.Sqlite` | 10.0.5 |
@@ -166,6 +169,10 @@ src/
     │   │   ├── Update/
     │   │   ├── Shared/
     │   │   └── EmployeeEndpointExtensions.cs
+    │   ├── Health/             # Health checks, response formatting, dashboard endpoint
+    │   │   ├── Checks/         # ProcessMemoryHealthCheck, SqliteFileHealthCheck, RedisRoundTripHealthCheck
+    │   │   ├── Formatting/     # Custom JSON response formatter
+    │   │   └── HealthEndpointExtensions.cs
     │   └── Playlists/          # Playlists and track associations
     │       ├── Create/
     │       ├── Delete/
@@ -217,6 +224,29 @@ OpenAPI JSON document:
 ```
 http://localhost:5185/openapi/v1.json
 ```
+
+### Health Monitoring
+
+The API exposes production-style health endpoints with tagged probes:
+
+- `GET /health/live` → liveness checks (process-level health)
+- `GET /health/ready` → readiness checks (SQLite + Redis dependencies)
+- `GET /health` → all checks (aggregate view)
+- `GET /health-ui` → custom operational dashboard (HTML)
+- `GET /health-ui-api` → dashboard data feed (custom JSON)
+
+Registered checks include:
+
+- `ProcessMemoryHealthCheck` (degrades when memory threshold is exceeded)
+- `SqliteFileHealthCheck` (verifies SQLite file presence + metadata)
+- `AddDbContextCheck<ChinookDbContext>` (verifies EF Core SQLite connectivity)
+- `RedisRoundTripHealthCheck` (set/get/remove probe key in Redis)
+
+The health JSON payload includes:
+
+- overall status
+- total duration in milliseconds
+- per-check entries (status, duration, description, exception, tags, data)
 
 ### Database
 

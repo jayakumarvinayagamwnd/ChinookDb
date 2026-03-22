@@ -11,6 +11,8 @@ using Chinook.API.Features.Billing;
 using Chinook.API.Features.Catalog;
 using Chinook.API.Features.Customers;
 using Chinook.API.Features.Employees;
+using Chinook.API.Features.Health;
+using Chinook.API.Features.Health.Checks;
 using Chinook.API.Features.Playlists;
 
 var logsPath = Path.Combine(Directory.GetCurrentDirectory(), "Logs");
@@ -54,6 +56,14 @@ try
     builder.Services.AddChinookDbContext(builder.Configuration);
     // Register Redis IDistributedCache and CachingBehavior pipeline behavior
     builder.Services.AddCacheServices(builder.Configuration);
+
+    builder.Services
+        .AddHealthChecks()
+        .AddCheck<ProcessMemoryHealthCheck>("process-memory", tags: ["live", "system"])
+        .AddCheck<SqliteFileHealthCheck>("sqlite-file", tags: ["ready", "sqlite", "storage"])
+        .AddDbContextCheck<ChinookDbContext>("sqlite-dbcontext", tags: ["ready", "sqlite", "db"])
+        .AddCheck<RedisRoundTripHealthCheck>("redis-roundtrip", tags: ["ready", "redis", "cache"]);
+
    
     //builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -79,6 +89,7 @@ try
     app.MapBillingEndpoints();
     app.MapEmployeeEndpoints();
     app.MapAnalyticsEndpoints();
+    app.MapHealthEndpoints();
 
     Log.Information("Scalar UI quick access: http://localhost:5185/scalar/v1");
 
