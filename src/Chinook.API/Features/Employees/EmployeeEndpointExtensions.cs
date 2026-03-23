@@ -1,4 +1,5 @@
 using Chinook.API.Common.Results;
+using Chinook.API.Common.Pagination;
 using MediatR;
 using Serilog;
 
@@ -13,8 +14,8 @@ public static class EmployeeEndpointExtensions
         group.MapGet("/", GetEmployeesAsync)
             .WithName("GetEmployees")
             .WithSummary("Retrieves a list of employees.")
-            .WithDescription("Returns a list of all employees.")
-            .Produces<List<EmployeeDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns employees using offset pagination.")
+            .Produces<OffsetPagedResponse<EmployeeDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/{employeeId:int}", GetEmployeeByIdAsync)
             .WithName("GetEmployeeById")
@@ -72,10 +73,10 @@ public static class EmployeeEndpointExtensions
         return app;
     }
 
-    private static async Task<IResult> GetEmployeesAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetEmployeesAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[EmployeeEndpointExtensions.GetEmployeesAsync] - Handling GetEmployeesAsync");
-        var result = await mediator.Send(new ListEmployeesQuery(), cancellationToken);
+        Log.Information("[EmployeeEndpointExtensions.GetEmployeesAsync] - Handling GetEmployeesAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListEmployeesQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 

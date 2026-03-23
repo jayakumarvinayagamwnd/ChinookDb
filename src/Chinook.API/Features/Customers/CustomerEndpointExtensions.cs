@@ -1,4 +1,5 @@
 using Chinook.API.Common.Results;
+using Chinook.API.Common.Pagination;
 using MediatR;
 using Serilog;
 
@@ -13,8 +14,8 @@ public static class CustomerEndpointExtensions
         group.MapGet("/", GetCustomersAsync)
             .WithName("GetCustomers")
             .WithSummary("Retrieves a list of customers.")
-            .WithDescription("Returns a list of all customers.")
-            .Produces<List<CustomerDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns customers using offset pagination.")
+            .Produces<OffsetPagedResponse<CustomerDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/{customerId:int}", GetCustomerByIdAsync)
             .WithName("GetCustomerById")
@@ -90,10 +91,10 @@ public static class CustomerEndpointExtensions
         return app;
     }
 
-    private static async Task<IResult> GetCustomersAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetCustomersAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[CustomerEndpointExtensions.GetCustomersAsync] - Handling GetCustomersAsync");
-        var result = await mediator.Send(new ListCustomersQuery(), cancellationToken);
+        Log.Information("[CustomerEndpointExtensions.GetCustomersAsync] - Handling GetCustomersAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListCustomersQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 

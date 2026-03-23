@@ -1,23 +1,26 @@
 using Chinook.API.Common.Contracts.Queries;
+using Chinook.API.Common.Pagination;
 using Chinook.API.Infrastructure.Persistence;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
 
 namespace Chinook.API.Features.Analytics;
 
-public sealed record GetTopTracksQuery(int Limit = 10) : IResultQuery<List<TopTrackDto>>, ICacheableQuery
+public sealed record GetTopTracksQuery(
+    int Offset = 0,
+    int Limit = OffsetPaginationDefaults.DefaultLimit) : IResultQuery<OffsetPagedResponse<TopTrackDto>>, ICacheableQuery, IOffsetPaginatedQuery
 {
-    public string CacheKey => $"analytics:top-tracks:{Limit}";
+    public string CacheKey => $"analytics:top-tracks:{Offset}:{Limit}";
     public TimeSpan? Expiry => TimeSpan.FromMinutes(15);
 }
 
 public sealed record GetTopTracksQueryHandler(
     ChinookDbContext dbContext,
-    ILogger<GetTopTracksQueryHandler> logger) : IResultQueryHandler<GetTopTracksQuery, List<TopTrackDto>>
+    ILogger<GetTopTracksQueryHandler> logger) : IResultQueryHandler<GetTopTracksQuery, OffsetPagedResponse<TopTrackDto>>
 {
-    public async Task<Result<List<TopTrackDto>>> Handle(GetTopTracksQuery request, CancellationToken cancellationToken)
+    public async Task<Result<OffsetPagedResponse<TopTrackDto>>> Handle(GetTopTracksQuery request, CancellationToken cancellationToken)
     {
-        logger.LogInformation("[GetTopTracksQueryHandler.Handle] - Handling GetTopTracksQuery with Limit: {Limit}", request.Limit);
+        logger.LogInformation("[GetTopTracksQueryHandler.Handle] - Handling GetTopTracksQuery with Offset: {Offset}, Limit: {Limit}", request.Offset, request.Limit);
 
         var topTracks = await dbContext.InvoiceLines
             .AsNoTracking()
@@ -36,10 +39,10 @@ public sealed record GetTopTracksQueryHandler(
                 g.Sum(x => x.Revenue)))
             .OrderByDescending(x => x.UnitsSold)
             .ThenByDescending(x => x.Revenue)
-            .Take(request.Limit)
-            .ToListAsync(cancellationToken);
+            .ThenBy(x => x.TrackId)
+            .ToOffsetPagedResponseAsync(request.Offset, request.Limit, cancellationToken);
 
-        logger.LogInformation("[GetTopTracksQueryHandler.Handle] - Successfully retrieved {TrackCount} tracks", topTracks.Count);
+        logger.LogInformation("[GetTopTracksQueryHandler.Handle] - Successfully retrieved {TrackCount} tracks out of {TotalCount}", topTracks.Items.Count, topTracks.TotalCount);
         return Result.Ok(topTracks);
     }
 }

@@ -1,4 +1,5 @@
 using Chinook.API.Common.Results;
+using Chinook.API.Common.Pagination;
 using MediatR;
 using Serilog;
 
@@ -13,22 +14,23 @@ public static class AnalyticsEndpointExtensions
         group.MapGet("/top-tracks", GetTopTracksAsync)
             .WithName("GetTopTracks")
             .WithSummary("Retrieves top-selling tracks.")
-            .WithDescription("Returns top tracks ranked by units sold and revenue.")
-            .Produces<List<TopTrackDto>>(StatusCodes.Status200OK)
+            .WithDescription("Returns top tracks ranked by units sold and revenue using offset pagination.")
+            .Produces<OffsetPagedResponse<TopTrackDto>>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest);
 
         group.MapGet("/top-artists", GetTopArtistsAsync)
             .WithName("GetTopArtists")
             .WithSummary("Retrieves top-selling artists.")
-            .WithDescription("Returns top artists ranked by units sold and revenue.")
-            .Produces<List<TopArtistDto>>(StatusCodes.Status200OK)
+            .WithDescription("Returns top artists ranked by units sold and revenue using offset pagination.")
+            .Produces<OffsetPagedResponse<TopArtistDto>>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest);
 
         group.MapGet("/revenue-by-country", GetRevenueByCountryAsync)
             .WithName("GetRevenueByCountry")
             .WithSummary("Retrieves revenue by billing country.")
-            .WithDescription("Returns aggregated revenue and invoice count by country.")
-            .Produces<List<RevenueByCountryDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns aggregated revenue and invoice count by country using offset pagination.")
+            .Produces<OffsetPagedResponse<RevenueByCountryDto>>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest);
 
         group.MapGet("/customer-ltv/{customerId:int}", GetCustomerLtvAsync)
             .WithName("GetCustomerLtv")
@@ -62,24 +64,24 @@ public static class AnalyticsEndpointExtensions
         return app;
     }
 
-    private static async Task<IResult> GetTopTracksAsync(int? limit, IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetTopTracksAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[AnalyticsEndpointExtensions.GetTopTracksAsync] - Handling GetTopTracksAsync with Limit: {Limit}", limit);
-        var result = await mediator.Send(new GetTopTracksQuery(limit ?? 10), cancellationToken);
+        Log.Information("[AnalyticsEndpointExtensions.GetTopTracksAsync] - Handling GetTopTracksAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new GetTopTracksQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 
-    private static async Task<IResult> GetTopArtistsAsync(int? limit, IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetTopArtistsAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[AnalyticsEndpointExtensions.GetTopArtistsAsync] - Handling GetTopArtistsAsync with Limit: {Limit}", limit);
-        var result = await mediator.Send(new GetTopArtistsQuery(limit ?? 10), cancellationToken);
+        Log.Information("[AnalyticsEndpointExtensions.GetTopArtistsAsync] - Handling GetTopArtistsAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new GetTopArtistsQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 
-    private static async Task<IResult> GetRevenueByCountryAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetRevenueByCountryAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[AnalyticsEndpointExtensions.GetRevenueByCountryAsync] - Handling GetRevenueByCountryAsync");
-        var result = await mediator.Send(new GetRevenueByCountryQuery(), cancellationToken);
+        Log.Information("[AnalyticsEndpointExtensions.GetRevenueByCountryAsync] - Handling GetRevenueByCountryAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new GetRevenueByCountryQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 

@@ -1,4 +1,5 @@
 using Chinook.API.Common.Results;
+using Chinook.API.Common.Pagination;
 using Chinook.API.Features.Catalog;
 using MediatR;
 using Serilog;
@@ -14,8 +15,8 @@ public static class PlaylistEndpointExtensions
         group.MapGet("/", GetPlaylistsAsync)
             .WithName("GetPlaylists")
             .WithSummary("Retrieves a list of playlists.")
-            .WithDescription("Returns a list of all playlists.")
-            .Produces<List<PlaylistDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns playlists using offset pagination.")
+            .Produces<OffsetPagedResponse<PlaylistDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/{playlistId:int}", GetPlaylistByIdAsync)
             .WithName("GetPlaylistById")
@@ -99,10 +100,10 @@ public static class PlaylistEndpointExtensions
         return app;
     }
 
-    private static async Task<IResult> GetPlaylistsAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetPlaylistsAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[PlaylistEndpointExtensions.GetPlaylistsAsync] - Handling GetPlaylistsAsync");
-        var result = await mediator.Send(new ListPlaylistsQuery(), cancellationToken);
+        Log.Information("[PlaylistEndpointExtensions.GetPlaylistsAsync] - Handling GetPlaylistsAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListPlaylistsQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 

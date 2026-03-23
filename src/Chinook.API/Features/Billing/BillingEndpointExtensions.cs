@@ -1,4 +1,5 @@
 using Chinook.API.Common.Results;
+using Chinook.API.Common.Pagination;
 using MediatR;
 using Serilog;
 
@@ -13,8 +14,8 @@ public static class BillingEndpointExtensions
         group.MapGet("/invoices", GetInvoicesAsync)
             .WithName("GetInvoices")
             .WithSummary("Retrieves a list of all invoices.")
-            .WithDescription("Returns all invoices ordered by date descending.")
-            .Produces<List<InvoiceDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns invoices ordered by date descending using offset pagination.")
+            .Produces<OffsetPagedResponse<InvoiceDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/invoices/{invoiceId:int}", GetInvoiceByIdAsync)
             .WithName("GetInvoiceById")
@@ -96,10 +97,10 @@ public static class BillingEndpointExtensions
         return app;
     }
 
-    private static async Task<IResult> GetInvoicesAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetInvoicesAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[BillingEndpointExtensions.GetInvoicesAsync] - Handling GetInvoicesAsync");
-        var result = await mediator.Send(new ListInvoicesQuery(), cancellationToken);
+        Log.Information("[BillingEndpointExtensions.GetInvoicesAsync] - Handling GetInvoicesAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListInvoicesQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 

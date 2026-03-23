@@ -1,23 +1,26 @@
 using Chinook.API.Common.Contracts.Queries;
+using Chinook.API.Common.Pagination;
 using Chinook.API.Infrastructure.Persistence;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
 
 namespace Chinook.API.Features.Analytics;
 
-public sealed record GetTopArtistsQuery(int Limit = 10) : IResultQuery<List<TopArtistDto>>, ICacheableQuery
+public sealed record GetTopArtistsQuery(
+    int Offset = 0,
+    int Limit = OffsetPaginationDefaults.DefaultLimit) : IResultQuery<OffsetPagedResponse<TopArtistDto>>, ICacheableQuery, IOffsetPaginatedQuery
 {
-    public string CacheKey => $"analytics:top-artists:{Limit}";
+    public string CacheKey => $"analytics:top-artists:{Offset}:{Limit}";
     public TimeSpan? Expiry => TimeSpan.FromMinutes(15);
 }
 
 public sealed record GetTopArtistsQueryHandler(
     ChinookDbContext dbContext,
-    ILogger<GetTopArtistsQueryHandler> logger) : IResultQueryHandler<GetTopArtistsQuery, List<TopArtistDto>>
+    ILogger<GetTopArtistsQueryHandler> logger) : IResultQueryHandler<GetTopArtistsQuery, OffsetPagedResponse<TopArtistDto>>
 {
-    public async Task<Result<List<TopArtistDto>>> Handle(GetTopArtistsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<OffsetPagedResponse<TopArtistDto>>> Handle(GetTopArtistsQuery request, CancellationToken cancellationToken)
     {
-        logger.LogInformation("[GetTopArtistsQueryHandler.Handle] - Handling GetTopArtistsQuery with Limit: {Limit}", request.Limit);
+        logger.LogInformation("[GetTopArtistsQueryHandler.Handle] - Handling GetTopArtistsQuery with Offset: {Offset}, Limit: {Limit}", request.Offset, request.Limit);
 
         var topArtists = await dbContext.InvoiceLines
             .AsNoTracking()
@@ -49,10 +52,10 @@ public sealed record GetTopArtistsQueryHandler(
                 g.Sum(x => x.Revenue)))
             .OrderByDescending(x => x.UnitsSold)
             .ThenByDescending(x => x.Revenue)
-            .Take(request.Limit)
-            .ToListAsync(cancellationToken);
+            .ThenBy(x => x.ArtistId)
+            .ToOffsetPagedResponseAsync(request.Offset, request.Limit, cancellationToken);
 
-        logger.LogInformation("[GetTopArtistsQueryHandler.Handle] - Successfully retrieved {ArtistCount} artists", topArtists.Count);
+        logger.LogInformation("[GetTopArtistsQueryHandler.Handle] - Successfully retrieved {ArtistCount} artists out of {TotalCount}", topArtists.Items.Count, topArtists.TotalCount);
         return Result.Ok(topArtists);
     }
 }

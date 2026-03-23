@@ -1,4 +1,5 @@
 using Chinook.API.Common.Results;
+using Chinook.API.Common.Pagination;
 using MediatR;
 using Serilog;
 
@@ -12,8 +13,8 @@ public static class CatalogEndpointExtensions
         group.MapGet("/artists", GetArtistsAsync)
             .WithName("GetArtists")
             .WithSummary("Retrieves a list of artists.")
-            .WithDescription("Returns a list of all artists in the catalog.")
-            .Produces<List<ArtistDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns artists in the catalog using offset pagination.")
+            .Produces<OffsetPagedResponse<ArtistDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/artists/{artistId:int}", GetArtistByIdAsync)
             .WithName("GetArtistById")
@@ -57,8 +58,8 @@ public static class CatalogEndpointExtensions
         group.MapGet("/albums", GetAlbumsAsync)
             .WithName("GetAlbums")
             .WithSummary("Retrieves a list of albums.")
-            .WithDescription("Returns a list of all albums in the catalog.")
-            .Produces<List<AlbumDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns albums in the catalog using offset pagination.")
+            .Produces<OffsetPagedResponse<AlbumDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/albums/{albumId:int}", GetAlbumByIdAsync)
             .WithName("GetAlbumById")
@@ -102,8 +103,8 @@ public static class CatalogEndpointExtensions
         group.MapGet("/tracks", GetTracksAsync)
             .WithName("GetTracks")
             .WithSummary("Retrieves a list of tracks.")
-            .WithDescription("Returns a list of all tracks in the catalog.")
-            .Produces<List<TrackDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns tracks in the catalog using offset pagination.")
+            .Produces<OffsetPagedResponse<TrackDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/tracks/{trackId:int}", GetTrackByIdAsync)
             .WithName("GetTrackById")
@@ -139,14 +140,14 @@ public static class CatalogEndpointExtensions
         group.MapGet("/genres", GetGenresAsync)
             .WithName("GetGenres")
             .WithSummary("Retrieves a list of genres.")
-            .WithDescription("Returns a list of all genres in the catalog.")
-            .Produces<List<GenreDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns genres in the catalog using offset pagination.")
+            .Produces<OffsetPagedResponse<GenreDto>>(StatusCodes.Status200OK);
 
         group.MapGet("/media-types", GetMediaTypesAsync)
             .WithName("GetMediaTypes")
             .WithSummary("Retrieves a list of media types.")
-            .WithDescription("Returns a list of all media types in the catalog.")
-            .Produces<List<MediaTypeDto>>(StatusCodes.Status200OK);
+            .WithDescription("Returns media types in the catalog using offset pagination.")
+            .Produces<OffsetPagedResponse<MediaTypeDto>>(StatusCodes.Status200OK);
 
         group.MapPost("/albums/{albumId:int}/publish", PublishAlbumAsync)
             .WithName("PublishAlbum")
@@ -188,38 +189,38 @@ public static class CatalogEndpointExtensions
         return result.ToHttpResult();
     }
 
-    private static async Task<IResult> GetArtistsAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetArtistsAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[CatalogEndpointExtensions.GetArtistsAsync] - Handling GetArtistsAsync");
-        var result = await mediator.Send(new ListArtistsQuery(), cancellationToken);
+        Log.Information("[CatalogEndpointExtensions.GetArtistsAsync] - Handling GetArtistsAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListArtistsQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 
-    private static async Task<IResult> GetAlbumsAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetAlbumsAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[CatalogEndpointExtensions.GetAlbumsAsync] - Handling GetAlbumsAsync");
-        var result = await mediator.Send(new ListAlbumsQuery(), cancellationToken);
+        Log.Information("[CatalogEndpointExtensions.GetAlbumsAsync] - Handling GetAlbumsAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListAlbumsQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 
-    private static async Task<IResult> GetTracksAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetTracksAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[CatalogEndpointExtensions.GetTracksAsync] - Handling GetTracksAsync");
-        var result = await mediator.Send(new ListTracksQuery(), cancellationToken);
+        Log.Information("[CatalogEndpointExtensions.GetTracksAsync] - Handling GetTracksAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListTracksQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 
-    private static async Task<IResult> GetGenresAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetGenresAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[CatalogEndpointExtensions.GetGenresAsync] - Handling GetGenresAsync");
-        var result = await mediator.Send(new ListGenresQuery(), cancellationToken);
+        Log.Information("[CatalogEndpointExtensions.GetGenresAsync] - Handling GetGenresAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListGenresQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 
-    private static async Task<IResult> GetMediaTypesAsync(IMediator mediator, CancellationToken cancellationToken)
+    private static async Task<IResult> GetMediaTypesAsync(int? offset, int? limit, IMediator mediator, CancellationToken cancellationToken)
     {
-        Log.Information("[CatalogEndpointExtensions.GetMediaTypesAsync] - Handling GetMediaTypesAsync");
-        var result = await mediator.Send(new ListMediaTypesQuery(), cancellationToken);
+        Log.Information("[CatalogEndpointExtensions.GetMediaTypesAsync] - Handling GetMediaTypesAsync with Offset: {Offset}, Limit: {Limit}", offset, limit);
+        var result = await mediator.Send(new ListMediaTypesQuery(offset ?? 0, limit ?? OffsetPaginationDefaults.DefaultLimit), cancellationToken);
         return result.ToHttpResult();
     }
 
